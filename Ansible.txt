@@ -1,0 +1,188 @@
+
+
+command to run adhocly 
+
+ansible batch -m command -a "uptime" -u root -k 
+
+this will run on ips under /etc/ansible/hosts file and will ask root crendentendials
+
+for patching adhocly 
+
+ansible batch -m command -a "/bin/usr/dzdo yum update -y" -u root -k
+
+ansible batch -m "ping" ---will give ping status of all machines
+
+ansible batch -a "df -h"
+
+ansible batch -a "Service sshd status"
+
+Test playbook to install package lsof
+
+cat test-playbook.yml
+---
+   - hosts:batch
+     tasks:
+       - name: "lsof install"
+         yum: 
+            name:lsof
+            state:present
+
+anisble-playbook -i inventory.txt test-playbook.yml -k --------sample playbook to run when inventory and playbook in same path
+
+
+installation of agent 
+
+cat bigfix
+---
+-hosts:agents
+    tasks:
+      - 
+        name: copy files
+        copy: src=/home/abc/file.txt dest=/tmp/ mode=755
+
+      - 
+        name: exceute script
+        shell: /tmp/abc.sh 
+
+-------------------------------------------------------------------------------------
+
+here agents will be a block in inventory file with mentioned hosts
+
+
+Patching playbooks:
+
+cat agent ------------------------------------agent script to deploy only if redhat 7 version
+---
+-hosts:agents
+    tasks:
+      - 
+        name: copy files
+        copy: src=/home/abc/file.txt dest=/tmp/ mode=755
+        when: ansible_distribution_major_version == "7"     
+
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+
+To disable key checking to servers 
+
+cat  /etc/ansible/ansible.cfg |grep -i host_key_checking
+
+un comment this parameter to prevent checking of keys 
+
+modules:
+sysetm
+command
+files
+database
+cloud
+windows and etc
+
+
+Sample playbook.
+
+---
+-hosts:agents
+    tasks:
+      - 
+        name: copy files
+        copy: src=/home/abc/file.txt dest=/tmp/ mode=755 ---will copy file frm source to destinatio and set permissions
+
+      - 
+        name: exceute script
+        shell: /tmp/abc.sh                     ----will run script
+      -
+        name:Start DB Services 
+        service name=postgresql state=started    -----will start service
+
+      - lineinfile:
+            path: /etc/resolv.conf
+            line: 'nameserver 10.4.5.6'    ----will Add DNS server entry to resolv.conf 
+        
+          
+ register command is used to register the result.
+
+
+- name: check status of service and email if its  down
+  hosts: localhost
+  tasks:
+    - command:service httpd status
+      register: result   ----it will storage result of httpd status
+
+    - mail:
+        to: admin@company.com
+      subj: Service Alert
+      body:Httpd Service down
+      when: result.stdout.find('down;) != -1
+
+this would send mail when service is down
+
+
+sample for loop:
+
+
+-
+ 
+  name: create users
+  hosts: local
+  tasks: 
+    - user: name= '{{ item.name }}' state=present uid='{{ item.uid}}'
+       loop:
+        - name:apple
+          uid: 1010
+        - name:mango
+          uid: 1011
+        - name:orange
+          uid: 1013
+
+Roles:
+
+ansible-galaxy search mysql -----to check sql role in repository
+
+ansible-galaxy install apple.mysql  ---will download role mysql owned by apple to location /etc/ansible/roles/apple.sql
+
+
+sample.yml
+-
+ name: install and configure mysql
+ hosts: db-server
+ roles:
+   - apple.mysql
+
+
+ansible-galaxy list -----to list roles
+
+ -apple.sql
+ -mango.sql
+
+we can package it sql installation and can upload to ansible-galaxy and mention it in role
+
+------------------------------------------
+vi mysql-role
+
+tasks:
+  - name:Install
+    yum: name=pre-req packages state=present
+
+  - name:Install mysql 
+    yum: name=mysql state=present
+  
+  - name: Start My SQL Service
+    service: name=mysql state=started
+  - name: Configure Database
+     mysql_db: name=db1 state=present
+
+ 
+---------------------------------------------------
+
+upload role to repository and we can use it locally by placing in /etc/ansible/roles/ and can refer in 
+    
+sample.yml
+-
+ name: install and configure mysql
+ hosts: db-server
+ roles:
+   - apple.mysql
+
+
+
+        
